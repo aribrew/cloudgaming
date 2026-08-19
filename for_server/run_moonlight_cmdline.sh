@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# This script is meant to be executed via Sunshine.
+#
+# Create a new app entry with your desired name, and use
+# bash run_moonlight_cmdline.sh as the command (include the full path).
+#
+# Then, edit the cloud_play.sh client script with the required data
+# and use it to launch the desired app in the server with the required
+# parameters.
+#
+# For security reasons, no command line starting with 'sudo' or 'su'
+# will be accepted.
+#
+
 log()
 {
 	MESSAGE="$1"
@@ -43,7 +56,7 @@ then
 
         ARGS=$(echo "$CMDLINE" | awk '{$1=""; print $0}')
         ARGS=$(echo "$ARGS" | awk '{$1=$1; print}')
-        
+
         if [[ "$CMD" == "su" ]] || [[ "$CMD" == "sudo" ]];
         then
             log "No 'su' or 'sudo' cmdlines are allowed."
@@ -66,7 +79,7 @@ then
         then
             source "$MOONLIGHT_CMDLINE/env"
         fi
-                
+
         $CMDLINE
 
         if [[ -f "$MOONLIGHT_CMDLINE/env" ]];
