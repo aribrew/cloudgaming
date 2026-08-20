@@ -8,7 +8,7 @@
 
 find_sunshine_uuid()
 {
-    SUNSHINE_STATE_FILE_PATH="~/.config/sunshine/sunshine_state.json"
+    SUNSHINE_STATE_FILE_PATH="$HOME/.config/sunshine/sunshine_state.json"
 
     if ! [[ -f "$SUNSHINE_STATE_FILE_PATH" ]];
     then
@@ -58,7 +58,7 @@ fi
 
 
 # Check if the connected client is using Android
-ANDROID_CLIENT=$(ssh user@${MOONLIGHT_CLIENT} "uname -a" | grep "Android")
+ANDROID_CLIENT=$(ssh $MOONLIGHT_USER@${MOONLIGHT_CLIENT} "uname -a" | grep "Android")
 
 if ! [[ "$ANDROID_CLIENT" == "" ]];
 then
@@ -106,7 +106,7 @@ then
              --es "UUID" $SUNSHINE_UUID \
              --es "AppId" $CMDLINE_APP_UUID"
 else
-    CMDLINE="moonlight stream $SUNSHINE_HOST $CMDLINE_APP_NAME &> /dev/null"
+    CMDLINE="moonlight stream $HOSTNAME $CMDLINE_APP_NAME &> /dev/null"
 fi
 
 
