@@ -6,13 +6,46 @@
 #
 
 
+find_sunshine_uuid()
+{
+    SUNSHINE_STATE_FILE_PATH="~/.config/sunshine/sunshine_state.json"
+
+    if ! [[ -f "$SUNSHINE_STATE_FILE_PATH" ]];
+    then
+        SS_DATA=""
+    else
+        SS_DATA=$(cat $SUNSHINE_STATE_FILE_PATH)
+    fi
+
+    if ! [[ "$SS_DATA" == "" ]];
+    then
+        UUID=$(echo "$SS_DATA" | grep "uniqueid")
+        UUID=$(echo "$UUID" | cut -d ':' -f 2 | cut -d ',' -f 1 | xargs)
+
+        if ! [[ $(echo "$UUID" | cut -d '-' -f 5) == "" ]];
+        then
+            echo "$UUID"
+        fi
+    fi
+}
+
+
 # Obtain the connected client's IP
 CURRENT_CLIENT=$(echo $SSH_CONNECTION | awk '{print $1}')
 
-# If no MOONLIGHT_CLIENT IP was exported, use the detected one
+# If no MOONLIGHT_CLIENT IP is provided, use the detected one
 if ! [[ -v MOONLIGHT_CLIENT ]];
 then
     MOONLIGHT_CLIENT="$CURRENT_CLIENT"
+fi
+
+
+SUNSHINE_UUID=$(find_sunshine_uuid)
+
+if [[ "$SUNSHINE_UUID" == "" ]];
+then
+    echo -e "This isn't a Sunshine host.\n"
+    exit 1
 fi
 
 
@@ -29,9 +62,17 @@ ANDROID_CLIENT=$(ssh user@${MOONLIGHT_CLIENT} "uname -a" | grep "Android")
 
 if ! [[ "$ANDROID_CLIENT" == "" ]];
 then
-    export CMDLINE_APP="CMDLINE_APP_UUID"
+    if ! [[ -v CMDLINE_APP_UUID ]];
+    then
+        echo "I NEED the CMDLINE_APP_UUID for launching the app in Android."
+        exit 1
+    fi
 else
-    export CMDLINE_APP="CMDLINE_APP_NAME"
+    if ! [[ -v CMDLINE_APP_NAME ]];
+    then
+        echo "I NEED the CMDLINE_APP_NAME for launching the app."
+        exit 1
+    fi
 fi
 
 
@@ -56,15 +97,16 @@ then
 fi
 
 
-APP_NAME$(echo "$APP_CMDLINE" | cut -d ' ' -f 1)
+APP_NAME=$(echo "$APP_CMDLINE" | cut -d ' ' -f 1)
 
 
-if [[ "$ANDROID_CLIENT" == "1" ]];
+if ! [[ "$ANDROID_CLIENT" == "" ]];
 then
-    SUNSHINE_HOST=""
+    CMDLINE="am start -n com.limelight/.ShortcutTrampoline \
+             --es "UUID" $SUNSHINE_UUID \
+             --es "AppId" $CMDLINE_APP_UUID"
 else
-    CMDLINE="moonlight stream $SUNSHINE_HOST $CMDLINE_APP &> /dev/null"
-    SUNSHINE_HOST="$HOSTNAME"
+    CMDLINE="moonlight stream $SUNSHINE_HOST $CMDLINE_APP_NAME &> /dev/null"
 fi
 
 
