@@ -30,6 +30,26 @@ find_sunshine_uuid()
 }
 
 
+usage()
+{
+    echo -e "Usage: "
+    echo -e "stream_app.sh <cmdline>\n"
+    echo -e "Export, or prepend, the following environment variables:"
+    echo -e "MOONLIGHT_USER: User to use when SSHing in the client"
+    echo -e "CMDLINE_APP_NAME: The registed app to launch. This app"
+    echo -e "This app executes the provided cmdline in the server before"
+    echo -e "the streaming starts. If not given, the default is 'Custom app'."
+    echo -e ""
+}
+
+
+if [[ "$1" == "" ]] || [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]];
+then
+    usage
+    exit 1
+fi
+
+
 # Obtain the connected client's IP
 CURRENT_CLIENT=$(echo $SSH_CONNECTION | awk '{print $1}')
 
@@ -70,8 +90,17 @@ then
 else
     if ! [[ -v CMDLINE_APP_NAME ]];
     then
-        echo "I NEED the CMDLINE_APP_NAME for launching the app."
-        exit 1
+        SUNSHINE_APPS="$HOME/.config/sunshine/apps.json"
+
+        cat "$SUNSHINE_APPS" | grep -q '"name": "Custom"'
+
+        if [[ "$?" == "0" ]];
+        then
+            CMDLINE_APP_NAME="Custom"
+        else
+            echo "I NEED the CMDLINE_APP_NAME for launching the app."
+            exit 1
+        fi
     fi
 fi
 
@@ -106,7 +135,8 @@ then
              --es "UUID" $SUNSHINE_UUID \
              --es "AppId" $CMDLINE_APP_UUID"
 else
-    CMDLINE="moonlight stream $HOSTNAME $CMDLINE_APP_NAME &> /dev/null"
+    CMDLINE="export DISPLAY=:0; ~/.local/bin/moonlight"
+    CMDLINE+=" moonlight stream $HOSTNAME $CMDLINE_APP_NAME &> /dev/null"
 fi
 
 
