@@ -36,7 +36,8 @@ usage()
     echo -e "stream_app.sh <cmdline>\n"
     echo -e "Export, or prepend, the following environment variables:"
     echo -e "MOONLIGHT_USER: User to use when SSHing in the client"
-    echo -e "CMDLINE_APP_NAME: The registed app to launch. This app"
+    echo -e "SSH_KEY: If provided, will be used for authenticate."
+    echo -e "CMDLINE_APP_NAME: The registed app to launch."
     echo -e "This app executes the provided cmdline in the server before"
     echo -e "the streaming starts. If not given, the default is 'Custom app'."
     echo -e ""
@@ -47,6 +48,12 @@ if [[ "$1" == "" ]] || [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]];
 then
     usage
     exit 1
+fi
+
+
+if [[ -v SSH_KEY ]];
+then
+    SSH_IDENTITY="-i $SSH_KEY"
 fi
 
 
@@ -78,7 +85,7 @@ fi
 
 
 # Check if the connected client is using Android
-ANDROID_CLIENT=$(ssh $MOONLIGHT_USER@${MOONLIGHT_CLIENT} "uname -a" | grep "Android")
+ANDROID_CLIENT=$(ssh $SSH_IDENTITY $MOONLIGHT_USER@${MOONLIGHT_CLIENT} "uname -a" | grep "Android")
 
 if ! [[ "$ANDROID_CLIENT" == "" ]];
 then
@@ -135,11 +142,12 @@ then
              --es "UUID" $SUNSHINE_UUID \
              --es "AppId" $CMDLINE_APP_UUID"
 else
-    CMDLINE="export DISPLAY=:0; ~/.local/bin/moonlight"
-    CMDLINE+=" moonlight stream $HOSTNAME $CMDLINE_APP_NAME &> /dev/null"
+    CMDLINE="\"export DISPLAY=:0; \$HOME/.local/bin/moonlight"
+    CMDLINE+=" moonlight stream $HOSTNAME $CMDLINE_APP_NAME &> /dev/null &\""
 fi
 
 
 echo -e "Trying to stream '$APP_NAME' to $MOONLIGHT_CLIENT...\n"
+echo -e "[DEBUG] Running ssh $SSH_IDENTITY ${MOONLIGHT_USER}@${MOONLIGHT_CLIENT} $CMDLINE"
 
-ssh ${MOONLIGHT_USER}@${MOONLIGHT_CLIENT} $CMDLINE
+ssh $SSH_IDENTITY ${MOONLIGHT_USER}@${MOONLIGHT_CLIENT} $CMDLINE
